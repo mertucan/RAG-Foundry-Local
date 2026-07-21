@@ -1,2 +1,0 @@
-"""Local RAG assistant package."""
-
