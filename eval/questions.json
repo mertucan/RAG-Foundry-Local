@@ -1,0 +1,32 @@
+[
+  {
+    "id": "EVAL-001",
+    "question": "How do I detect a gas leak?",
+    "expected_doc_ids": ["DOC-IP-001"]
+  },
+  {
+    "id": "EVAL-002",
+    "question": "What should I do during an emergency shutdown?",
+    "expected_doc_ids": ["DOC-SC-001"]
+  },
+  {
+    "id": "EVAL-003",
+    "question": "Which PPE is required for gas field work?",
+    "expected_doc_ids": ["DOC-SC-002"]
+  },
+  {
+    "id": "EVAL-004",
+    "question": "How do I troubleshoot no gas flow at a site?",
+    "expected_doc_ids": ["DOC-FD-003"]
+  },
+  {
+    "id": "EVAL-005",
+    "question": "What are the steps for pressure testing?",
+    "expected_doc_ids": ["DOC-IP-003"]
+  },
+  {
+    "id": "EVAL-006",
+    "question": "How should confined space entry be handled?",
+    "expected_doc_ids": ["DOC-SC-003"]
+  }
+]

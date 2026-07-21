@@ -141,6 +141,18 @@
       padding: 4px 0;
       display: flex;
       justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .source-title {
+      min-width: 0;
+    }
+    .source-preview {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      opacity: 0.82;
+      line-height: 1.4;
     }
     .source-score {
       background: #1a3a2a;
@@ -148,6 +160,32 @@
       padding: 1px 6px;
       border-radius: 4px;
       font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .stream-status {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .suggestion-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .suggestion-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.82rem;
+      min-height: 36px;
+      padding: 8px 10px;
+    }
+    .suggestion-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     /* ── Typing indicator ── */
@@ -564,14 +602,24 @@
       });
       const data = await res.json();
       if (!res.ok) {
+        let data = {};
+        try { data = await res.json(); } catch { /* ignore */ }
+        if (data.error) {
+          addMessage('agent', data.error);
+          return;
+        }
         showUploadStatus('error', data.error || 'Upload failed.');
         return;
       }
       showUploadStatus('success',
         `✓ ${data.filename} indexed: ${data.chunks} chunk(s). Total: ${data.totalChunks} chunks.`);
       loadDocList();
+      const uploadSuggestions = data.suggestions || [];
       // Notify in chat
       addMessage('agent', `📄 **Document uploaded:** ${data.title} [${data.category}]\n${data.chunks} chunk(s) added to local knowledge base.`);
+      if (uploadSuggestions.length > 0) {
+        addMessage('agent', 'Suggested questions for this document:', null, uploadSuggestions);
+      }
     } catch (err) {
       showUploadStatus('error', 'Upload failed. Is the server running?');
     }
@@ -696,6 +744,7 @@
             `<li>Equipment maintenance &amp; repair steps</li>` +
             `<li>Pressure testing &amp; valve inspection</li>` +
             `<li>PPE requirements &amp; compliance</li></ul>` +
+            `<div class="stream-status">CLI mode: run <code>python -m app.cli</code> in this project folder.</div><br>` +
             `<em style="color:var(--warning);">⚠️ Always follow your site-specific safety procedures.</em>`;
           delete welcomeMsgReady.dataset.replaced;
         }
@@ -735,6 +784,13 @@
     });
   });
 
+  chat.addEventListener('click', (e) => {
+    const btn = e.target.closest('.suggestion-btn');
+    if (!btn) return;
+    input.value = btn.dataset.q;
+    sendMessage();
+  });
+
   // ── Escape HTML to prevent XSS ──
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -767,7 +823,7 @@
   }
 
   // ── Add message to chat ──
-  function addMessage(role, content, sources) {
+  function addMessage(role, content, sources, suggestions) {
     const div = document.createElement('div');
     div.className = 'message ' + role;
 
@@ -785,7 +841,14 @@
           const item = document.createElement('div');
           item.className = 'source-item';
           const titleSpan = document.createElement('span');
-          titleSpan.textContent = `${s.title} [${s.category}]`;
+          titleSpan.className = 'source-title';
+          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}`;
+          if (s.preview) {
+            const preview = document.createElement('span');
+            preview.className = 'source-preview';
+            preview.textContent = s.preview;
+            titleSpan.appendChild(preview);
+          }
           const scoreSpan = document.createElement('span');
           scoreSpan.className = 'source-score';
           scoreSpan.textContent = `${(s.score * 100).toFixed(0)}%`;
@@ -796,6 +859,10 @@
         srcDiv.appendChild(details);
         div.appendChild(srcDiv);
       }
+
+      if (suggestions && suggestions.length > 0) {
+        div.appendChild(renderSuggestions(suggestions));
+      }
     } else {
       div.textContent = content;
     }
@@ -803,6 +870,20 @@
     chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
     return div;
+  }
+
+  function renderSuggestions(suggestions) {
+    const wrap = document.createElement('div');
+    wrap.className = 'suggestion-list';
+    for (const text of suggestions.slice(0, 3)) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'suggestion-btn';
+      btn.dataset.q = text;
+      btn.textContent = text;
+      wrap.appendChild(btn);
+    }
+    return wrap;
   }
 
   // ── Add typing indicator ──
@@ -818,6 +899,18 @@
   function removeTyping() {
     const el = document.getElementById('typing');
     if (el) el.remove();
+  }
+
+  function setTypingStatus(message) {
+    let el = document.getElementById('typing');
+    if (!el) {
+      addTyping();
+      el = document.getElementById('typing');
+    }
+    el.classList.remove('typing');
+    el.classList.add('stream-status');
+    el.textContent = message;
+    chat.scrollTop = chat.scrollHeight;
   }
 
   // ── Send message ──
@@ -875,7 +968,10 @@
             const chunk = JSON.parse(payload);
             if (chunk.type === 'sources') {
               sources = chunk.data;
+            } else if (chunk.type === 'status') {
+              setTypingStatus(chunk.data);
             } else if (chunk.type === 'text') {
+              removeTyping();
               agentText += chunk.data;
               if (!agentDiv) {
                 agentDiv = addMessage('agent', agentText, null);
@@ -884,6 +980,7 @@
                 chat.scrollTop = chat.scrollHeight;
               }
             } else if (chunk.type === 'error') {
+              removeTyping();
               addMessage('agent', '❌ ' + chunk.data);
             }
           } catch { /* skip malformed chunk */ }
@@ -902,7 +999,14 @@
           const item = document.createElement('div');
           item.className = 'source-item';
           const titleSpan = document.createElement('span');
-          titleSpan.textContent = `${s.title} [${s.category}]`;
+          titleSpan.className = 'source-title';
+          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}`;
+          if (s.preview) {
+            const preview = document.createElement('span');
+            preview.className = 'source-preview';
+            preview.textContent = s.preview;
+            titleSpan.appendChild(preview);
+          }
           const scoreSpan = document.createElement('span');
           scoreSpan.className = 'source-score';
           scoreSpan.textContent = `${(s.score * 100).toFixed(0)}%`;
