@@ -2,7 +2,7 @@
 
 ## Scope
 
-This report evaluates the Python Foundry Local RAG assistant against the summer school project goals:
+This report evaluates the Python Foundry Local academic library RAG assistant against the summer school project goals:
 
 - ingest local documents,
 - generate and store embeddings,
@@ -12,6 +12,11 @@ This report evaluates the Python Foundry Local RAG assistant against the summer 
 - serve a usable local web UI,
 - support runtime document upload,
 - expose source chunk previews and suggested upload questions,
+- expose PDF page references,
+- support filters by course, topic, semester, source type, and tag,
+- support document delete and reindex actions,
+- warn on duplicate uploads,
+- allow the chat model alias to be changed from the UI,
 - provide CLI chat mode,
 - measure retrieval quality with a curated evaluation set,
 - handle basic API validation and edge cases.
@@ -24,7 +29,7 @@ This report evaluates the Python Foundry Local RAG assistant against the summer 
 - Embedding model: `qwen3-embedding-0.6b`
 - Chat model: `phi-3.5-mini`
 - Vector store: SQLite at `data/rag.db`
-- Knowledge base: 20 markdown gas engineering documents in `docs/`
+- Knowledge base: academic markdown notes in `docs/`
 
 Generated runtime artifacts such as `.venv`, `data/rag.db`, logs, and model caches are ignored by Git.
 
@@ -49,6 +54,11 @@ Current automated coverage:
 | `/api/chat` success and validation | Yes |
 | `/api/chat/stream` SSE shape | Yes |
 | `/api/upload` success and validation | Yes |
+| PDF/document loader behavior | Yes |
+| Metadata filters | Yes |
+| Duplicate upload warning | Yes |
+| Document delete and reindex | Yes |
+| Runtime settings endpoint | Yes |
 | Static root UI route | Yes |
 
 The endpoint tests use a mocked engine so they run quickly and do not require loading local AI models.
@@ -79,7 +89,7 @@ python -m app.evaluate --json
 
 Result target: pass when the hit rate is high enough for the current corpus and demo goals. For this teaching corpus, the expected target is 80% or higher.
 
-Observed result after rebuilding the vector store from the 20 gas engineering markdown files:
+Observed result after rebuilding the vector store from the academic markdown files:
 
 - Questions: 6
 - Hits: 6
@@ -97,8 +107,8 @@ python -m app.ingest
 
 Observed result:
 
-- 20 markdown documents processed.
-- 42 chunks generated.
+- 10 academic markdown documents processed.
+- 10 chunks generated.
 - Embeddings were generated through Foundry Local.
 - SQLite database was written to `data/rag.db`.
 
@@ -126,13 +136,13 @@ Result: Pass.
 Test question:
 
 ```text
-How do I detect a gas leak?
+What are the key ideas in retrieval augmented generation?
 ```
 
 Observed result:
 
-- The model returned safety-first guidance.
-- The answer referenced leak detection procedure content.
+- The model returned source-grounded academic guidance.
+- The answer referenced the relevant local study note.
 - Source metadata was returned with document titles, categories, IDs, and relevance scores.
 
 Result: Pass.
@@ -141,11 +151,12 @@ Result: Pass.
 
 Expected behavior:
 
-- `.md` and `.txt` documents are accepted.
+- `.md`, `.txt`, and `.pdf` documents are accepted.
 - Invalid extensions are rejected.
 - Missing filename headers are rejected.
 - Uploaded documents are saved to `docs/`, chunked, embedded, and indexed without restarting the server.
 - The upload response returns suggested questions.
+- Duplicate uploads return a replacement warning.
 - The web UI renders suggested questions as clickable prompts.
 
 Automated endpoint tests cover this behavior with a mocked embedding path.
@@ -169,11 +180,26 @@ Expected behavior:
 
 Result: Pass when the server-independent terminal chat returns a grounded answer and source list.
 
+### Library Management
+
+Expected behavior:
+
+- Indexed documents can be deleted from the upload/document modal.
+- Existing documents can be reindexed from disk.
+- Filters can be populated from document metadata.
+- Chat requests can include active filters.
+- The runtime settings endpoint exposes the current Foundry Local chat model.
+
+Automated tests cover metadata filtering, duplicate upload warnings, delete, reindex, and settings responses.
+
+Result: Pass.
+
 ## Known Limitations
 
 - Endpoint tests mock the model engine. They validate API behavior, not live model quality.
 - Live model response quality should be evaluated with an expanded curated question set for each new domain.
 - The current retrieval uses brute-force cosine similarity over SQLite rows, which is appropriate for a small teaching corpus. Larger corpora may need an approximate nearest-neighbor index or a vector database extension.
+- OCR requires the Tesseract application for scanned PDFs. The Python OCR libraries are installed, but Tesseract itself is optional and not bundled.
 - No final presentation slide deck is included; the application and README are ready for demo use.
 
 ## Recommended Evaluation Set
@@ -182,13 +208,13 @@ Use at least these categories when adapting the project:
 
 | Category | Example |
 |---|---|
-| Answerable procedural question | "How do I detect a gas leak?" |
-| Safety-critical question | "What should I do before confined space entry?" |
-| Fault diagnosis | "What causes low outlet pressure?" |
-| Equipment maintenance | "How do I calibrate a sensor?" |
+| Answerable concept question | "What are the key ideas in retrieval augmented generation?" |
+| Method comparison | "Compare qualitative and quantitative research methods." |
+| Academic writing | "What should I include in a literature review?" |
+| Project documentation | "What sections are required in the project report?" |
 | Unanswerable question | "What is the company holiday policy?" |
 | Empty / invalid input | Empty string or malformed JSON |
-| Upload workflow | Upload a new `.md` document and ask about it |
+| Upload workflow | Upload a new `.md`, `.txt`, or `.pdf` document and ask about it |
 
 ## Status
 

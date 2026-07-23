@@ -16,9 +16,9 @@ class ChunkerTests(unittest.TestCase):
         self.assertTrue(chunks[1].startswith("w8"))
 
     def test_term_frequency_and_similarity(self):
-        a = term_frequency("Gas leak gas detector")
-        b = term_frequency("gas detector")
-        self.assertEqual(a["gas"], 2)
+        a = term_frequency("RAG notes rag retrieval")
+        b = term_frequency("rag retrieval")
+        self.assertEqual(a["rag"], 2)
         self.assertGreater(cosine_similarity(a, b), 0)
 
 

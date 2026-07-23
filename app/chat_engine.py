@@ -43,14 +43,14 @@ class ChatEngine:
         self.compact_mode = enabled
         print(f"[ChatEngine] Compact mode: {'ON' if enabled else 'OFF'}")
 
-    def retrieve(self, query: str) -> list[dict]:
+    def retrieve(self, query: str, filters: dict | None = None) -> list[dict]:
         if self.store is None:
             raise RuntimeError("Vector store is not initialized.")
         top_k = config.compact_top_k if self.compact_mode else config.top_k
-        return self.store.search(self._embed(query), top_k)
+        return self.store.search(self._embed(query), top_k, filters)
 
-    def query(self, user_message: str, history: list[dict] | None = None) -> dict:
-        chunks = self.retrieve(user_message)
+    def query(self, user_message: str, history: list[dict] | None = None, filters: dict | None = None) -> dict:
+        chunks = self.retrieve(user_message, filters)
         messages = self._build_messages(user_message, chunks, history or [])
         if self.chat_client is None:
             return {"text": self._fallback_answer(chunks), "sources": self._sources(chunks)}
@@ -60,9 +60,11 @@ class ChatEngine:
         text = response.choices[0].message.content
         return {"text": text, "sources": self._sources(chunks)}
 
-    def query_stream(self, user_message: str, history: list[dict] | None = None) -> Generator[dict, None, None]:
+    def query_stream(
+        self, user_message: str, history: list[dict] | None = None, filters: dict | None = None
+    ) -> Generator[dict, None, None]:
         yield {"type": "status", "phase": "retrieving", "data": "Retrieving relevant local context..."}
-        chunks = self.retrieve(user_message)
+        chunks = self.retrieve(user_message, filters)
         yield {"type": "sources", "data": self._sources(chunks)}
         yield {"type": "status", "phase": "generating", "data": "Generating answer with the local model..."}
         messages = self._build_messages(user_message, chunks, history or [])
@@ -89,6 +91,46 @@ class ChatEngine:
                     pass
         if self.store is not None:
             self.store.close()
+
+    def set_chat_model(self, alias: str) -> dict:
+        alias = alias.strip()
+        if not alias:
+            raise ValueError("Model alias is required.")
+        if self.manager is None:
+            raise RuntimeError("Foundry Local manager is not initialized.")
+        current_alias = getattr(self.chat_model, "alias", config.chat_model) if self.chat_model is not None else config.chat_model
+        if alias == current_alias:
+            return {"model": current_alias, "changed": False}
+
+        self._emit("loading", f"Switching chat model to {alias}...")
+        new_model = self.manager.catalog.get_model(alias)
+        self._emit("variant", f"Selected chat model: {new_model.alias}")
+        if not new_model.is_cached:
+            self._emit("download", f"Downloading {new_model.alias}...", 0)
+            new_model.download(
+                lambda progress: self._emit(
+                    "download",
+                    f"Downloading {new_model.alias}... {round(normalize_progress(progress) * 100)}%",
+                    normalize_progress(progress),
+                )
+            )
+        else:
+            self._emit("cached", f"Model {new_model.alias} is already cached.")
+        self._emit("loading", f"Loading {new_model.alias} into memory...")
+        new_model.load()
+        new_client = new_model.get_chat_client()
+        old_model = self.chat_model
+        self.chat_model = new_model
+        self.chat_client = new_client
+        config.chat_model = alias
+        self._apply_generation_settings()
+        if old_model is not None:
+            try:
+                old_model.unload()
+            except Exception:
+                pass
+        self._emit("ready", f"Model ready: {self.chat_model.alias}")
+        return {"model": self.chat_model.alias, "changed": True}
 
     def _init_embedding_model(self) -> None:
         self._emit("embedding", f"Discovering embedding model: {config.embedding_model}")
@@ -165,6 +207,12 @@ class ChatEngine:
                 "category": chunk["category"],
                 "docId": chunk["doc_id"],
                 "chunkIndex": chunk["chunk_index"],
+                "pageNumber": chunk.get("page_number"),
+                "tags": chunk.get("tags") or "",
+                "course": chunk.get("course") or "",
+                "topic": chunk.get("topic") or "",
+                "semester": chunk.get("semester") or "",
+                "sourceType": chunk.get("source_type") or "",
                 "score": round(float(chunk["score"]), 2),
                 "preview": self._preview(chunk["content"]),
             }

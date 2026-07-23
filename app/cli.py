@@ -10,7 +10,7 @@ def main() -> None:
     parser.add_argument("--compact", action="store_true", help="Use compact mode for faster, shorter answers.")
     args = parser.parse_args()
 
-    print("=== Gas Field RAG CLI ===")
+    print("=== Academic Library RAG CLI ===")
     print("Loading Foundry Local models. This may take a moment on first run.\n")
 
     engine = ChatEngine()

@@ -1,6 +1,6 @@
-# Gas Field Local RAG - Python Foundry Local Assistant
+# Academic Library Local RAG - Python Foundry Local Assistant
 
-A fully local Retrieval-Augmented Generation (RAG) support assistant for gas field inspection and maintenance engineers. The app ingests markdown documents, creates local embeddings with Microsoft Foundry Local, stores vectors in SQLite, retrieves relevant chunks for a question, and sends the grounded prompt to a local Foundry chat model.
+A fully local Retrieval-Augmented Generation (RAG) assistant for searching personal academic notes, research summaries, course materials, project briefs, and markdown/text exports of PDF notes. The app ingests documents, creates local embeddings with Microsoft Foundry Local, stores vectors in SQLite, retrieves relevant chunks for a question, and sends the grounded prompt to a local Foundry chat model.
 
 The browser UI is still a single static HTML file in `public/`, but the application backend is now Python to match the summer school project plan.
 
@@ -12,8 +12,13 @@ The browser UI is still a single static HTML file in `public/`, but the applicat
 - SQLite-backed vector store
 - Markdown ingestion with YAML front-matter
 - Local web UI with streaming responses over Server-Sent Events
-- Runtime `.md` / `.txt` document upload
+- Runtime `.md` / `.txt` / `.pdf` document upload
 - Source previews and relevance scores in the web UI
+- PDF page references in source results
+- Course, topic, semester, source-type, and tag filters
+- Document delete and reindex actions
+- Duplicate upload warnings
+- User-editable Foundry Local chat model alias
 - Suggested questions after runtime uploads
 - CLI chat mode for terminal demos
 - Retrieval evaluation with a curated question set
@@ -31,6 +36,14 @@ Install Foundry Local on Windows:
 ```powershell
 winget install Microsoft.FoundryLocal
 ```
+
+Optional OCR support for scanned PDFs:
+
+```powershell
+winget install UB-Mannheim.TesseractOCR
+```
+
+If Tesseract is not on PATH, set `RAG_TESSERACT_CMD` in `.env` to the installed `tesseract.exe` path.
 
 Create and activate a virtual environment:
 
@@ -98,13 +111,18 @@ Foundry Local downloads and caches these models locally on first use. The model 
 
 ## Document Format
 
-Add markdown documents to `docs/`:
+Add markdown, text, or PDF documents to `docs/`. Markdown supports optional front-matter:
 
 ```markdown
 ---
 title: Troubleshooting Widget Errors
 category: Support
 id: KB-001
+course: Example Course
+topic: Troubleshooting
+semester: Summer 2026
+source_type: note
+tags: widget, errors
 ---
 
 # Troubleshooting Widget Errors
@@ -112,15 +130,32 @@ id: KB-001
 ...your content here...
 ```
 
-Run `python -m app.ingest` again after replacing the corpus.
+Run `python -m app.ingest` again after replacing the corpus. For PDFs, the app extracts embedded text. Scanned image-only PDFs need OCR first.
 
 ## Runtime Upload
 
-The UI upload button accepts `.md` and `.txt` files while the server is running. Uploaded files are saved to `docs/`, chunked, embedded, and indexed immediately without restarting the server. After upload, the web UI shows suggested questions that can be clicked immediately.
+The UI upload button accepts `.md`, `.txt`, and `.pdf` files while the server is running. Uploaded files are saved to `docs/`, text is extracted when needed, and the content is chunked, embedded, and indexed immediately without restarting the server. After upload, the web UI shows suggested study questions that can be clicked immediately.
+
+PDF behavior:
+
+- Text-based PDFs are parsed with `pypdf`.
+- Scanned/image-only PDFs fall back to OCR when Tesseract is installed.
+- OCR can be configured with `RAG_ENABLE_OCR`, `RAG_OCR_LANGUAGE`, `RAG_OCR_DPI`, `RAG_OCR_MAX_PAGES`, and `RAG_TESSERACT_CMD`.
+
+## Library Controls
+
+The web UI includes:
+
+- Filters for course, topic, semester, source type, and tag.
+- Document delete and reindex buttons in the upload/document modal.
+- Duplicate upload warnings when a document ID or filename already exists.
+- A chat model input in the header. Enter a Foundry Local chat model alias and click `Load`.
+
+Changing the chat model affects generation only. If you change the embedding model in `.env`, run `python -m app.ingest` again so stored vectors and query vectors match.
 
 ## RAG Pipeline
 
-1. `app.ingest` reads every markdown file in `docs/`.
+1. `app.ingest` reads every supported file in `docs/`: `.md`, `.txt`, and `.pdf`.
 2. `app.chunker` parses front-matter and splits documents into overlapping chunks.
 3. Foundry Local generates an embedding for each chunk.
 4. `app.vector_store` stores chunk text and embedding vectors in SQLite.
@@ -138,6 +173,7 @@ The UI upload button accepts `.md` and `.txt` files while the server is running.
 app/
   chunker.py          Markdown parsing, chunking, cosine similarity
   config.py           Paths, models, chunk settings, server settings
+  document_loader.py  Markdown, text, PDF, and OCR text extraction
   embeddings.py       Foundry embedding provider and fallback provider
   foundry_runtime.py  Foundry Local SDK initialization helpers
   ingest.py           Batch ingestion script
@@ -150,7 +186,7 @@ app/
 public/
   index.html          Static browser UI
 docs/
-  *.md                Local knowledge base
+  *.md/.txt/.pdf      Local academic knowledge base
 tests/
   test_*.py           Unit tests
 eval/
@@ -166,9 +202,13 @@ data/
 | `GET` | `/api/health` | Model/server status |
 | `GET` | `/api/status` | SSE status stream for model loading |
 | `GET` | `/api/docs` | Indexed document list |
+| `DELETE` | `/api/docs/{doc_id}` | Delete an indexed document and its stored file |
+| `POST` | `/api/docs/{doc_id}/reindex` | Rebuild one document from disk |
 | `POST` | `/api/chat` | Non-streaming chat response |
 | `POST` | `/api/chat/stream` | Streaming chat response |
 | `POST` | `/api/upload` | Runtime document upload |
+| `GET` | `/api/settings` | Current runtime settings |
+| `POST` | `/api/settings/model` | Load a different Foundry Local chat model |
 
 ## Testing
 
@@ -219,11 +259,23 @@ Common settings:
 | `RAG_MAX_OUTPUT_TOKENS` | Normal answer token limit |
 | `RAG_COMPACT_MAX_OUTPUT_TOKENS` | Edge Mode answer token limit |
 | `RAG_PORT` | Local web server port |
+| `RAG_ENABLE_OCR` | Enable OCR fallback for scanned PDFs |
+| `RAG_OCR_LANGUAGE` | Tesseract language code, for example `eng` or `tur` |
+| `RAG_TESSERACT_CMD` | Optional path to `tesseract.exe` |
 
-## Adapting This for Another Domain
+## Improvement Ideas
 
-1. Replace files in `docs/`.
-2. Edit [app/prompts.py](app/prompts.py) for your domain and response style.
+- Add a document detail view with full chunk previews.
+- Add answer feedback buttons to mark useful or weak responses.
+- Add saved chats for study sessions.
+- Add automatic evaluation reports after every ingest.
+- Add OCR language presets for English and Turkish scanned PDFs.
+- Add duplicate content hashing, not just duplicate filename/document ID checks.
+
+## Adapting This Library
+
+1. Replace files in `docs/` with your own notes, summaries, and project documents.
+2. Edit [app/prompts.py](app/prompts.py) if you want a different academic tone or answer format.
 3. Tune `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, and `RAG_TOP_K` in `.env`.
 4. Change `RAG_CHAT_MODEL` or `RAG_EMBEDDING_MODEL` in `.env` to another Foundry Local catalog model.
 5. Update [eval/questions.json](eval/questions.json) with representative questions and expected document IDs.

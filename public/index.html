@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gas Field Support Agent</title>
+  <title>Academic Library Assistant</title>
   <style>
-    /* ── Base: high-contrast, large text for field use ── */
+    /* Academic library theme */
     *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --accent: #58a6ff;
-      --warning: #f0883e;
-      --danger: #f85149;
-      --success: #3fb950;
-      --user-bg: #1c2a3f;
-      --agent-bg: #1a1e24;
+      --bg: #f5f2eb;
+      --surface: #fffaf1;
+      --border: #d8cdbb;
+      --text: #24211d;
+      --text-muted: #6e6253;
+      --accent: #3f6f8f;
+      --warning: #9a6b1f;
+      --danger: #b94a48;
+      --success: #2f7d5c;
+      --user-bg: #dceaf1;
+      --agent-bg: #fffdf8;
       --radius: 8px;
     }
     html { font-size: 18px; }
@@ -58,15 +58,44 @@
       border-radius: 12px;
       font-weight: 600;
     }
-    .status.online { background: #1a3a2a; color: var(--success); }
-    .status.offline { background: #3a1a1a; color: var(--danger); }
-    .status.loading { background: #3a2a1a; color: var(--warning); }
+    .status.online { background: #dceee5; color: var(--success); }
+    .status.offline { background: #f2d7d5; color: var(--danger); }
+    .status.loading { background: #f1e3c7; color: var(--warning); }
 
     /* ── Mode toggle ── */
     .controls {
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+    .model-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .model-controls input {
+      width: 150px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.75rem;
+      min-height: 32px;
+      padding: 6px 8px;
+    }
+    .icon-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      cursor: pointer;
+      min-height: 32px;
+      padding: 5px 8px;
+    }
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
     .toggle-label {
       font-size: 0.75rem;
@@ -108,7 +137,7 @@
     .message.user {
       align-self: flex-end;
       background: var(--user-bg);
-      border: 1px solid #264d73;
+      border: 1px solid #afc8d7;
     }
     .message.agent {
       align-self: flex-start;
@@ -116,7 +145,7 @@
       border: 1px solid var(--border);
     }
     .message.agent .safety-warning {
-      background: #3a2a1a;
+      background: #f7ead1;
       border-left: 4px solid var(--warning);
       padding: 8px 12px;
       margin: 8px 0;
@@ -155,7 +184,7 @@
       line-height: 1.4;
     }
     .source-score {
-      background: #1a3a2a;
+      background: #dceee5;
       color: var(--success);
       padding: 1px 6px;
       border-radius: 4px;
@@ -238,7 +267,7 @@
     }
     #send-btn {
       background: var(--accent);
-      color: #000;
+      color: #fff;
       border: none;
       border-radius: var(--radius);
       padding: 12px 20px;
@@ -285,6 +314,24 @@
     .quick-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
+    }
+    #filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    #filters select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.78rem;
+      min-height: 36px;
+      padding: 6px 8px;
     }
 
     /* ── Markdown-like rendering ── */
@@ -406,10 +453,24 @@
     .doc-item {
       display: flex;
       justify-content: space-between;
+      gap: 8px;
+      align-items: center;
       padding: 4px 0;
       font-size: 0.82rem;
       color: var(--text-muted);
     }
+    .doc-title { min-width: 0; }
+    .doc-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .doc-action {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 3px 6px;
+    }
+    .doc-action:hover { border-color: var(--accent); color: var(--accent); }
     .doc-item .doc-chunks {
       background: #1a3a2a;
       color: var(--success);
@@ -430,7 +491,7 @@
       header h1 { font-size: 0.95rem; gap: 6px; }
       header h1 .icon { font-size: 1.2rem; }
       header h1 .title-text { display: none; }
-      header h1::after { content: "Gas Field Support"; font-size: 0.95rem; }
+      header h1::after { content: "Library Assistant"; font-size: 0.95rem; }
       .controls { gap: 8px; }
       .toggle-label { font-size: 0.7rem; }
       .status { font-size: 0.7rem; padding: 3px 8px; }
@@ -461,7 +522,7 @@
     }
     @media (max-width: 340px) {
       html { font-size: 15px; }
-      header h1::after { content: "Gas Support"; font-size: 0.9rem; }
+      header h1::after { content: "Library"; font-size: 0.9rem; }
       .quick-btn { padding: 6px 10px; font-size: 0.72rem; }
       #send-btn { min-width: 56px; padding: 10px 12px; }
     }
@@ -471,10 +532,14 @@
 
 <header>
   <h1>
-    <span class="icon">🔧</span>
-    <span class="title-text">Gas Field Support Agent</span>
+    <span class="icon">📚</span>
+    <span class="title-text">Academic Library Assistant</span>
   </h1>
   <div class="controls">
+    <div class="model-controls">
+      <input id="model-input" placeholder="phi-3.5-mini" title="Foundry Local chat model alias">
+      <button class="icon-btn" id="model-save" title="Load chat model">Load</button>
+    </div>
     <label class="toggle-label">
       <input type="checkbox" id="compact-mode">
       Edge Mode
@@ -484,14 +549,22 @@
 </header>
 
 <div id="quick-actions">
-  <button class="quick-btn" data-q="How do I detect a gas leak?">🔍 Gas Leak Detection</button>
-  <button class="quick-btn" data-q="Low pressure downstream of regulator">⚠️ Low Pressure Fault</button>
-  <button class="quick-btn" data-q="Emergency shutdown procedure">🚨 Emergency Shutdown</button>
-  <button class="quick-btn" data-q="Pre-inspection checklist">📋 Pre-Inspection</button>
-  <button class="quick-btn" data-q="PPE requirements for gas field work">🦺 PPE Requirements</button>
-  <button class="quick-btn" data-q="No gas flow at site">🚫 No Gas Flow</button>
-  <button class="quick-btn" data-q="Pressure testing procedure">📐 Pressure Test</button>
-  <button class="quick-btn" data-q="Confined space entry procedure">⛑️ Confined Space</button>
+  <button class="quick-btn" data-q="Summarize the research methodology notes">Research Methodology</button>
+  <button class="quick-btn" data-q="What are the key ideas in retrieval augmented generation?">RAG Concepts</button>
+  <button class="quick-btn" data-q="Compare qualitative and quantitative analysis">Compare Methods</button>
+  <button class="quick-btn" data-q="What should I include in a literature review?">Literature Review</button>
+  <button class="quick-btn" data-q="How should I prepare my project report?">Project Report</button>
+  <button class="quick-btn" data-q="Which documents mention privacy or offline work?">Privacy Notes</button>
+  <button class="quick-btn" data-q="Give me revision notes for evaluation metrics">Evaluation Metrics</button>
+  <button class="quick-btn" data-q="What are the expected deliverables?">Deliverables</button>
+</div>
+
+<div id="filters">
+  <select id="filter-course"><option value="">All courses</option></select>
+  <select id="filter-topic"><option value="">All topics</option></select>
+  <select id="filter-semester"><option value="">All semesters</option></select>
+  <select id="filter-source-type"><option value="">All source types</option></select>
+  <select id="filter-tag"><option value="">All tags</option></select>
 </div>
 
 <div id="chat">
@@ -506,7 +579,7 @@
   <button id="upload-btn" title="Upload document to knowledge base">📄</button>
   <textarea
     id="user-input"
-    placeholder="Describe the issue or ask a question..."
+    placeholder="Ask about your notes, readings, summaries, or project documents..."
     rows="1"
     autofocus
   ></textarea>
@@ -519,13 +592,13 @@
     <button class="modal-close" id="upload-close">&times;</button>
     <h2>📄 Upload Document</h2>
     <p class="upload-description">
-      Add a <strong>.md</strong> or <strong>.txt</strong> file to the local knowledge base.
+      Add a <strong>.md</strong>, <strong>.txt</strong>, or <strong>.pdf</strong> file to the local knowledge base.
       It will be chunked and indexed immediately.
     </p>
     <div class="drop-zone" id="drop-zone">
       <span class="drop-icon">📁</span>
       <span>Drop file here or <u>click to browse</u></span>
-      <input type="file" id="file-input" accept=".md,.txt">
+      <input type="file" id="file-input" accept=".md,.txt,.pdf">
     </div>
     <div class="upload-status" id="upload-status"></div>
     <div class="doc-list" id="doc-list">
@@ -545,6 +618,15 @@
   const statusEl = document.getElementById('status');
   const compactToggle = document.getElementById('compact-mode');
   const quickBtns = document.querySelectorAll('.quick-btn');
+  const modelInput = document.getElementById('model-input');
+  const modelSave = document.getElementById('model-save');
+  const filterEls = {
+    course: document.getElementById('filter-course'),
+    topic: document.getElementById('filter-topic'),
+    semester: document.getElementById('filter-semester'),
+    source_type: document.getElementById('filter-source-type'),
+    tag: document.getElementById('filter-tag')
+  };
 
   let sending = false;
   let conversationHistory = [];
@@ -582,37 +664,35 @@
 
   async function handleFileUpload(file) {
     const name = file.name;
-    if (!name.endsWith('.md') && !name.endsWith('.txt')) {
-      showUploadStatus('error', 'Only .md and .txt files are accepted.');
+    const lowerName = name.toLowerCase();
+    if (!lowerName.endsWith('.md') && !lowerName.endsWith('.txt') && !lowerName.endsWith('.pdf')) {
+      showUploadStatus('error', 'Only .md, .txt, and .pdf files are accepted.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      showUploadStatus('error', 'File too large (max 2 MB).');
+    if (file.size > 10 * 1024 * 1024) {
+      showUploadStatus('error', 'File too large (max 10 MB).');
       return;
     }
 
     showUploadStatus('loading', 'Uploading and indexing…');
 
     try {
-      const text = await file.text();
+      const bytes = await file.arrayBuffer();
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': name },
-        body: new TextEncoder().encode(text)
+        body: bytes
       });
       const data = await res.json();
       if (!res.ok) {
-        let data = {};
-        try { data = await res.json(); } catch { /* ignore */ }
-        if (data.error) {
-          addMessage('agent', data.error);
-          return;
-        }
         showUploadStatus('error', data.error || 'Upload failed.');
         return;
       }
       showUploadStatus('success',
         `✓ ${data.filename} indexed: ${data.chunks} chunk(s). Total: ${data.totalChunks} chunks.`);
+      if (data.duplicate && data.warning) {
+        showUploadStatus('success', `${data.filename} indexed. ${data.warning}`);
+      }
       loadDocList();
       const uploadSuggestions = data.suggestions || [];
       // Notify in chat
@@ -632,22 +712,49 @@
     uploadStatus.textContent = msg;
   }
 
+  docListItems.addEventListener('click', (e) => {
+    const btn = e.target.closest('.doc-action');
+    if (!btn) return;
+    handleDocAction(btn.dataset.action, btn.dataset.docId);
+  });
+
+  modelSave.addEventListener('click', updateModel);
+
   async function loadDocList() {
     try {
       const res = await fetch('/api/docs');
       const data = await res.json();
+      renderFilters(data.filters || {});
       if (data.docs && data.docs.length > 0) {
         docListItems.innerHTML = '';
         for (const d of data.docs) {
           const item = document.createElement('div');
           item.className = 'doc-item';
           const titleSpan = document.createElement('span');
+          titleSpan.className = 'doc-title';
           titleSpan.textContent = `${d.title} [${d.category}]`;
           const chunkSpan = document.createElement('span');
           chunkSpan.className = 'doc-chunks';
           chunkSpan.textContent = `${d.chunks} chunks`;
+          const actions = document.createElement('span');
+          actions.className = 'doc-actions';
+          const reindexBtn = document.createElement('button');
+          reindexBtn.type = 'button';
+          reindexBtn.className = 'doc-action';
+          reindexBtn.dataset.action = 'reindex';
+          reindexBtn.dataset.docId = d.doc_id;
+          reindexBtn.textContent = 'Reindex';
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'doc-action';
+          deleteBtn.dataset.action = 'delete';
+          deleteBtn.dataset.docId = d.doc_id;
+          deleteBtn.textContent = 'Delete';
+          actions.appendChild(reindexBtn);
+          actions.appendChild(deleteBtn);
           item.appendChild(titleSpan);
           item.appendChild(chunkSpan);
+          item.appendChild(actions);
           docListItems.appendChild(item);
         }
       } else {
@@ -655,6 +762,106 @@
       }
     } catch {
       docListItems.textContent = 'Could not load document list.';
+    }
+  }
+
+  function renderFilters(filters) {
+    const labels = {
+      course: 'All courses',
+      topic: 'All topics',
+      semester: 'All semesters',
+      source_type: 'All source types',
+      tag: 'All tags'
+    };
+    for (const [key, el] of Object.entries(filterEls)) {
+      const previous = el.value;
+      el.innerHTML = '';
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = labels[key];
+      el.appendChild(empty);
+      const values = filters[key === 'tag' ? 'tags' : key] || [];
+      for (const value of values) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        el.appendChild(option);
+      }
+      el.value = previous;
+    }
+  }
+
+  async function handleDocAction(action, docId) {
+    if (!docId) return;
+    const method = action === 'delete' ? 'DELETE' : 'POST';
+    const url = action === 'delete'
+      ? `/api/docs/${encodeURIComponent(docId)}`
+      : `/api/docs/${encodeURIComponent(docId)}/reindex`;
+    showUploadStatus('loading', action === 'delete' ? 'Deleting document...' : 'Reindexing document...');
+    try {
+      const res = await fetch(url, { method });
+      const data = await res.json();
+      if (!res.ok) {
+        showUploadStatus('error', data.error || 'Document action failed.');
+        return;
+      }
+      showUploadStatus('success', action === 'delete' ? 'Document deleted.' : `${data.title} reindexed.`);
+      loadDocList();
+    } catch {
+      showUploadStatus('error', 'Document action failed. Is the server running?');
+    }
+  }
+
+  function getActiveFilters() {
+    const filters = {};
+    for (const [key, el] of Object.entries(filterEls)) {
+      if (el.value) filters[key] = el.value;
+    }
+    return filters;
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      modelInput.value = data.chatModel || '';
+      modelInput.placeholder = data.chatModel || 'phi-3.5-mini';
+    } catch {
+      modelInput.placeholder = 'phi-3.5-mini';
+    }
+  }
+
+  async function updateModel() {
+    const chatModel = modelInput.value.trim();
+    if (!chatModel || sending) return;
+    modelSave.disabled = true;
+    sendBtn.disabled = true;
+    statusEl.textContent = 'Switching model...';
+    statusEl.className = 'status loading';
+    try {
+      const res = await fetch('/api/settings/model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatModel })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        addMessage('agent', data.error || 'Could not load the selected model.');
+        statusEl.textContent = 'Offline Ready';
+        statusEl.className = 'status online';
+        return;
+      }
+      modelInput.value = data.model;
+      addMessage('agent', `Chat model loaded: **${data.model}**`);
+      statusEl.textContent = 'Offline Ready';
+      statusEl.className = 'status online';
+    } catch {
+      addMessage('agent', 'Could not change the model. Check the server terminal.');
+      statusEl.textContent = 'Offline Ready';
+      statusEl.className = 'status online';
+    } finally {
+      modelSave.disabled = false;
+      sendBtn.disabled = false;
     }
   }
 
@@ -672,6 +879,8 @@
             modelReady = true;
             evtSource.close();
             sendBtn.disabled = false;
+            loadSettings();
+            loadDocList();
           }
         } catch { /* ignore parse errors */ }
       };
@@ -736,16 +945,16 @@
         // Always restore the welcome message when ready
         const welcomeMsgReady = chat.querySelector('.message.agent');
         if (welcomeMsgReady) {
-          welcomeMsgReady.innerHTML = `<strong>Gas Field Support Agent – Ready</strong><br>` +
+          welcomeMsgReady.innerHTML = `<strong>Academic Library Assistant - Ready</strong><br>` +
             `Running locally on this device. No internet connection required.<br><br>` +
             `Ask me about:<ul>` +
-            `<li>Gas leak detection &amp; safety procedures</li>` +
-            `<li>Fault diagnosis &amp; decision trees</li>` +
-            `<li>Equipment maintenance &amp; repair steps</li>` +
-            `<li>Pressure testing &amp; valve inspection</li>` +
-            `<li>PPE requirements &amp; compliance</li></ul>` +
+            `<li>Lecture notes, reading summaries, and study guides</li>` +
+            `<li>Research methods, evaluation metrics, and project reports</li>` +
+            `<li>Comparing concepts across local documents</li>` +
+            `<li>Finding source-backed answers with relevance scores</li>` +
+            `<li>Uploading new markdown or text notes at runtime</li></ul>` +
             `<div class="stream-status">CLI mode: run <code>python -m app.cli</code> in this project folder.</div><br>` +
-            `<em style="color:var(--warning);">⚠️ Always follow your site-specific safety procedures.</em>`;
+            `<em style="color:var(--warning);">Answers are grounded only in your local knowledge base.</em>`;
           delete welcomeMsgReady.dataset.replaced;
         }
         break;
@@ -842,7 +1051,15 @@
           item.className = 'source-item';
           const titleSpan = document.createElement('span');
           titleSpan.className = 'source-title';
-          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}`;
+          const page = s.pageNumber ? ` page ${s.pageNumber}` : '';
+          const meta = [s.course, s.topic, s.semester, s.sourceType].filter(Boolean).join(' / ');
+          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}${page}`;
+          if (meta) {
+            const metaSpan = document.createElement('span');
+            metaSpan.className = 'source-preview';
+            metaSpan.textContent = meta;
+            titleSpan.appendChild(metaSpan);
+          }
           if (s.preview) {
             const preview = document.createElement('span');
             preview.className = 'source-preview';
@@ -936,7 +1153,8 @@
         body: JSON.stringify({
           message: text,
           history: conversationHistory.slice(-6), // Keep last 3 exchanges
-          compact: compactToggle.checked
+          compact: compactToggle.checked,
+          filters: getActiveFilters()
         })
       });
 
@@ -1000,7 +1218,15 @@
           item.className = 'source-item';
           const titleSpan = document.createElement('span');
           titleSpan.className = 'source-title';
-          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}`;
+          const page = s.pageNumber ? ` page ${s.pageNumber}` : '';
+          const meta = [s.course, s.topic, s.semester, s.sourceType].filter(Boolean).join(' / ');
+          titleSpan.textContent = `${s.title} [${s.category}] - ${s.docId || 'DOC'} #${s.chunkIndex ?? 0}${page}`;
+          if (meta) {
+            const metaSpan = document.createElement('span');
+            metaSpan.className = 'source-preview';
+            metaSpan.textContent = meta;
+            titleSpan.appendChild(metaSpan);
+          }
           if (s.preview) {
             const preview = document.createElement('span');
             preview.className = 'source-preview';

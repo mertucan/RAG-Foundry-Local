@@ -25,6 +25,13 @@ def _float_env(name: str, default: float) -> float:
     return float(value) if value else default
 
 
+def _bool_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _path_env(name: str, default: Path) -> Path:
     value = os.getenv(name)
     if not value:
@@ -34,7 +41,7 @@ def _path_env(name: str, default: Path) -> Path:
 
 
 class Config:
-    app_name = "gas-field-local-rag-python"
+    app_name = "academic-library-local-rag-python"
     chat_model = os.getenv("RAG_CHAT_MODEL", "phi-3.5-mini")
     embedding_model = os.getenv("RAG_EMBEDDING_MODEL", "qwen3-embedding-0.6b")
 
@@ -53,7 +60,12 @@ class Config:
 
     host = os.getenv("RAG_HOST", "127.0.0.1")
     port = _int_env("RAG_PORT", 3000)
-    max_upload_bytes = _int_env("RAG_MAX_UPLOAD_BYTES", 2 * 1024 * 1024)
+    max_upload_bytes = _int_env("RAG_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+    ocr_enabled = _bool_env("RAG_ENABLE_OCR", True)
+    ocr_language = os.getenv("RAG_OCR_LANGUAGE", "eng")
+    ocr_dpi = _int_env("RAG_OCR_DPI", 200)
+    ocr_max_pages = _int_env("RAG_OCR_MAX_PAGES", 30)
+    tesseract_cmd = os.getenv("RAG_TESSERACT_CMD", "")
 
 
 config = Config()
